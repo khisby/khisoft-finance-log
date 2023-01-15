@@ -17,7 +17,9 @@ kategori yg tersedia ini ya kak :
 4. bensin
 5. bulanan
 6. belanja
-7. lainnya
+7. project
+8. kerja
+9. lainnya
 	`
 	ReplyChatSaved           = "Okay kak, aku catet yak. Detailnya gini kak \n\nTime : %s \nCategory : %s \nAmount : %s \nStatus : %s \nDescription : %s"
 	ReportTextNotFound       = "Maaf, aku ga nemu data keuangan kamu kak. Kamu udah pernah catat keuangan belum?"

@@ -7,3 +7,4 @@ whatsapp.db
 .vscode
 
 bin/
+.DS_Store
