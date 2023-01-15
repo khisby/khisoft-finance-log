@@ -1,0 +1,7 @@
+# credential.json file. This file contains the credentials for the service account. You can download this file from the Google Cloud Console.
+credential.json 
+
+# database file. generate from whatsmeow library dont do not think about it
+whatsapp.db
+
+.vscode
