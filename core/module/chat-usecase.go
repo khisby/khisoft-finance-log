@@ -150,6 +150,7 @@ func (c *ChatUsecase) Report(sender, message string) {
 			fmt.Printf("Error sending message: %s", err)
 			return
 		}
+		return
 	}
 
 	pemasukan, pengeluaran, totalPemasukanCategory, totalPengeluaranCategory, err := c.countReport(rows, jenisReport, waktuReport)
