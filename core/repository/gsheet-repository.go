@@ -83,12 +83,12 @@ func (g *GSheetRepository) UpdateSheetData(sheetId string, data [][]string) erro
 
 	rb := &sheets.ClearValuesRequest{}
 
-	_, err := g.gsheetCli.Spreadsheets.Values.Clear(g.GSheetID, sheetId+"!A1", rb).Do()
+	_, err := g.gsheetCli.Spreadsheets.Values.Clear(g.GSheetID, sheetId, rb).Do()
 	if err != nil {
 		return err
 	}
 
-	_, err = g.gsheetCli.Spreadsheets.Values.Append(g.GSheetID, sheetId+"!A1", &sheets.ValueRange{
+	_, err = g.gsheetCli.Spreadsheets.Values.Append(g.GSheetID, sheetId, &sheets.ValueRange{
 		Values: sheetData,
 	}).ValueInputOption("USER_ENTERED").Do()
 	if err != nil {

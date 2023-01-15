@@ -6,22 +6,23 @@ const (
 Untuk menggunakan aplikasi Finance-Log, Kamu bisa pakai command ini ya:
 1. [keluar/masuk] [jumlah] dari/buat [kategori] [deskripsi] -> save keuangan kamu
 2. [debit/kredit] enter [jumlah] enter [kategori] enter [deskripsi] -> save keuangan kamu
-3. [laporan/report] [hari/bulan] [ini/kemarin]
-4. link -> untuk melihat link google sheet kamu
-5. bantuan/bantuin -> untuk melihat bantuan
+3. [laporan/report] [hari/bulan] [ini/kemarin] -> untuk melihat laporan keuangan kamu
+4. hapus terakhir/barusan -> untuk menghapus data terakhir
+5. link -> untuk melihat link google sheet kamu
+6. bantuan/bantuin -> untuk melihat bantuan
 
 kategori yg tersedia ini ya kak :
-1. makan
-2. jajan
-3. jalan
-4. bensin
-5. bulanan
-6. belanja
-7. project
-8. kerja
+1. makan (termasuk: minum)
+2. jajan (termasuk: ngopi/nongkrong)
+3. jalan (termasuk: liburan)
+4. transport (termasuk: bensin, parkir) 
+5. bulanan (termasuk: listrik, air, internet)
+6. belanja (termasuk: belanja online)
+7. project 
+8. kerja 
 9. lainnya
 	`
-	ReplyChatSaved           = "Okay kak, aku catet yak. Detailnya gini kak \n\nTime : %s \nCategory : %s \nAmount : %s \nStatus : %s \nDescription : %s"
+	ReplyChatSaved           = "Okay kak, aku catet yak. Detailnya gini kak \n\nStatus : %s \nNominal : %s \nKategori : %s \nKeterangan : %s"
 	ReportTextNotFound       = "Maaf, aku ga nemu data keuangan kamu kak. Kamu udah pernah catat keuangan belum?"
 	ReportTextHeader         = "Ini laporan keuangan kamu %s %s kak : \n\n"
 	ReportTextPemasukan      = "Total Pemasukan : %s \n"
@@ -33,13 +34,13 @@ kategori yg tersedia ini ya kak :
 type Category string
 
 const (
-	Makan   Category = "Makan/Minum"
-	Jajan   Category = "Jajan"
-	Jalan   Category = "Jalan-Jalan"
-	Bensin  Category = "Bensin"
-	Bulanan Category = "Bulanan"
-	Belanja Category = "Belanja"
-	Lainnya Category = "Lain-Lain"
-	Project Category = "Project"
-	Kerja   Category = "Kerja"
+	Makan     Category = "Makan/Minum"
+	Jajan     Category = "Jajan"
+	Jalan     Category = "Jalan-Jalan"
+	Transport Category = "transport"
+	Bulanan   Category = "Bulanan"
+	Belanja   Category = "Belanja"
+	Lainnya   Category = "Lain-Lain"
+	Project   Category = "Project"
+	Kerja     Category = "Kerja"
 )

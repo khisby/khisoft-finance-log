@@ -41,7 +41,14 @@ func NewChatUsecase(gsheetUsecase *repository.GSheetRepository, waCli *whatsmeow
 	mapCategory["minuman"] = entity.Makan
 	mapCategory["jajan"] = entity.Jajan
 	mapCategory["jalan"] = entity.Jalan
-	mapCategory["Bulanan"] = entity.Bulanan
+	mapCategory["jalan2"] = entity.Jalan
+	mapCategory["jalan-jalan"] = entity.Jalan
+	mapCategory["jalan²"] = entity.Jalan
+	mapCategory["transport"] = entity.Transport
+	mapCategory["transportasi"] = entity.Transport
+	mapCategory["bensin"] = entity.Transport
+	mapCategory["parkir"] = entity.Transport
+	mapCategory["bulanan"] = entity.Bulanan
 	mapCategory["belanja"] = entity.Belanja
 	mapCategory["belanjaan"] = entity.Belanja
 	mapCategory["project"] = entity.Project
@@ -110,9 +117,63 @@ func (c *ChatUsecase) FinanceLog(sender string, message *waProto.Message) {
 				fmt.Printf("Error sending message: %s", err)
 				return
 			}
+		} else if splitMessageText[0] == "hapus" {
+			c.Delete(sender, messageText)
 		}
 	}
 
+}
+
+func (c *ChatUsecase) Delete(sender, message string) {
+	splitMessageText := strings.Split(strings.ToLower(message), " ")
+	if len(splitMessageText) > 1 {
+		posisiHapus := 0
+		teks := ""
+		if splitMessageText[1] == "barusan" || splitMessageText[1] == "terakhir" {
+			posisiHapus = 1
+			teks = "terakhir"
+		} else {
+			err := c.SendMessage(sender, "Mau hapus apa kak? barusan/terakhir/-1/-2/-3/-4/-5")
+			if err != nil {
+				fmt.Printf("Error sending message: %s", err)
+				return
+			}
+			return
+		}
+
+		rows, err := c.gsheetUsecase.GetSheetData(sender)
+		if err != nil {
+			fmt.Printf("Error getting sheet data: %s", err)
+			return
+		}
+
+		if len(rows) <= posisiHapus || len(rows) == 1 {
+			err := c.SendMessage(sender, "Datanya udh ga ada kak")
+			if err != nil {
+				fmt.Printf("Error sending message: %s", err)
+				return
+			}
+			return
+		}
+
+		rows = rows[:len(rows)-posisiHapus]
+
+		go func() {
+			err = c.gsheetUsecase.UpdateSheetData(sender, rows)
+			if err != nil {
+				fmt.Printf("Error updating sheet: %s", err)
+				return
+			}
+		}()
+
+		go func() {
+			err = c.SendMessage(sender, fmt.Sprintf("Data %s sudah dihapus kak", teks))
+			if err != nil {
+				fmt.Printf("Error sending message: %s", err)
+				return
+			}
+		}()
+	}
 }
 
 func (c *ChatUsecase) Report(sender, message string) {
@@ -186,7 +247,7 @@ func (c *ChatUsecase) countReport(rows [][]string, jenisReport, waktuReport stri
 	totalPengeluaranCategory := map[string]int64{}
 
 	for _, row := range rows {
-		if row[0] == "Time" {
+		if len(row) == 0 || row[0] == "Time" {
 			continue
 		}
 
@@ -266,7 +327,14 @@ func (c *ChatUsecase) Catat(sender, message string) {
 	}
 
 	go func() {
-		err = c.SendMessage(sender, fmt.Sprintf(entity.ReplyChatSaved, financeLog.Time.Format("02 Jan 2006 15:04"), financeLog.Status, financeLog.Amount, financeLog.Category, financeLog.Description))
+		// string parse to int64
+		amount, err := strconv.ParseInt(financeLog.Amount, 10, 64)
+		if err != nil {
+			fmt.Printf("Error parsing amount: %s", err)
+			return
+		}
+
+		err = c.SendMessage(sender, fmt.Sprintf(entity.ReplyChatSaved, financeLog.Status, utils.FormatRupiah(amount), financeLog.Category, financeLog.Description))
 		if err != nil {
 			fmt.Printf("Error sending message: %s", err)
 		}
@@ -323,8 +391,14 @@ func (c *ChatUsecase) parseMessageToFinanceLog(message, sender string) (entity.F
 	} else {
 		status = splitString[0]
 		jumlah = splitString[1]
-		kategori = splitString[3]
-		deskripsi = strings.Join(splitString[4:], " ")
+		if splitString[2] != "untuk" && splitString[2] != "dari" && splitString[2] != "buat" {
+			kategori = splitString[2]
+			deskripsi = strings.Join(splitString[3:], " ")
+		} else {
+			kategori = splitString[3]
+			deskripsi = strings.Join(splitString[4:], " ")
+		}
+
 	}
 
 	if status == "keluar" || status == "kredit" {
@@ -335,7 +409,7 @@ func (c *ChatUsecase) parseMessageToFinanceLog(message, sender string) (entity.F
 		return financeLog, errors.New("Maaf, kamu maunya di catat sebagai keluar/kredit apa masuk/debit? \n\nContoh: " + example)
 	}
 
-	amount := jumlah
+	amount := strings.Replace(jumlah, ".", "", -1)
 	if strings.Contains(amount, "k") || strings.Contains(amount, "ribu") {
 		amount = strings.Replace(amount, "k", "", -1)
 		amount = strings.Replace(amount, "ribu", "", -1)
@@ -365,7 +439,7 @@ func (c *ChatUsecase) parseMessageToFinanceLog(message, sender string) (entity.F
 }
 
 func (c *ChatUsecase) SendMessage(to string, message string) error {
-	fmt.Printf("Sending message to: %s with content: %s", to, message)
+	fmt.Printf(time.Now().Format("2006-01-02 15:04:05")+" Sending message to: %s with content: %s\n", to, message)
 
 	newJid := types.NewJID(to, "s.whatsapp.net")
 	newMessage := &waProto.Message{
