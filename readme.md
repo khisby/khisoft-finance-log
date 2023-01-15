@@ -1,5 +1,6 @@
 # Khisoft Finance Log
 Financial Record can store your income and outcome finance data with daily or monthly reports.  
+using WhatsappBot and Spreadsheet API
 
 ## Env Var
 GSHEET_ID -> from url spreadsheet after `https://docs.google.com/spreadsheets/d/` before `/edit`  
