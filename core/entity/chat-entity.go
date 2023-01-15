@@ -29,6 +29,7 @@ kategori yg tersedia ini ya kak :
 	ReportTextPengeluaran    = "Total Pengeluaran : %s \n"
 	ReportTextCategoryHeader = "\n\n%s by Kategori : \n"
 	ReportTextCategory       = "%s : %s \n"
+	DeletedText              = "Data %s kamu udah aku hapus kak, Detailnya yg ini kak \n\nStatus : %s \nNominal : %s \nKategori : %s \nKeterangan : %s"
 )
 
 type Category string

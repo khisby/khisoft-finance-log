@@ -156,6 +156,7 @@ func (c *ChatUsecase) Delete(sender, message string) {
 			return
 		}
 
+		lastRow := rows[len(rows)-posisiHapus]
 		rows = rows[:len(rows)-posisiHapus]
 
 		go func() {
@@ -167,7 +168,7 @@ func (c *ChatUsecase) Delete(sender, message string) {
 		}()
 
 		go func() {
-			err = c.SendMessage(sender, fmt.Sprintf("Data %s sudah dihapus kak", teks))
+			err = c.SendMessage(sender, fmt.Sprintf(entity.DeletedText, teks, lastRow[3], lastRow[2], lastRow[1], lastRow[4]))
 			if err != nil {
 				fmt.Printf("Error sending message: %s", err)
 				return
