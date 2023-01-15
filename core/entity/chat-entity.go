@@ -38,7 +38,7 @@ const (
 	Makan     Category = "Makan/Minum"
 	Jajan     Category = "Jajan"
 	Jalan     Category = "Jalan-Jalan"
-	Transport Category = "transport"
+	Transport Category = "Transport"
 	Bulanan   Category = "Bulanan"
 	Belanja   Category = "Belanja"
 	Lainnya   Category = "Lain-Lain"
