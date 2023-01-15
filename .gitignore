@@ -5,3 +5,5 @@ credential.json
 whatsapp.db
 
 .vscode
+
+bin/
