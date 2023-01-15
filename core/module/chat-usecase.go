@@ -168,7 +168,13 @@ func (c *ChatUsecase) Delete(sender, message string) {
 		}()
 
 		go func() {
-			err = c.SendMessage(sender, fmt.Sprintf(entity.DeletedText, teks, lastRow[3], lastRow[2], lastRow[1], lastRow[4]))
+			amount, err := strconv.ParseInt(lastRow[2], 10, 64)
+			if err != nil {
+				fmt.Printf("Error parsing string to int64: %s", err)
+				return
+			}
+
+			err = c.SendMessage(sender, fmt.Sprintf(entity.DeletedText, teks, lastRow[3], utils.FormatRupiah(amount), lastRow[1], lastRow[4]))
 			if err != nil {
 				fmt.Printf("Error sending message: %s", err)
 				return
