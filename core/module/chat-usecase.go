@@ -382,28 +382,28 @@ func (c *ChatUsecase) parseMessageToFinanceLog(message, sender string) (entity.F
 	financeLog.FillTime()
 	financeLog.WhatsappNumber = sender
 
-	splitString := strings.Split(strings.ToLower(message), " ")
+	splitString := strings.Split(strings.ToLower(message), "\n")
 	status := ""
 	jumlah := ""
 	kategori := ""
 	deskripsi := ""
-	if len(splitString) < 5 {
-		splitString := strings.Split(strings.ToLower(message), "\n")
+	if len(splitString) == 4 {
 		if len(splitString) < 3 {
 			return financeLog, errors.New("Maaf, aku ga ngerti maksud pesanmu. Sepertinya templatemu salah \n\nContoh: " + example)
 		}
-		status = splitString[0]
-		jumlah = splitString[1]
-		kategori = splitString[2]
+		status = strings.TrimSpace(splitString[0])
+		jumlah = strings.TrimSpace(splitString[1])
+		kategori = strings.TrimSpace(splitString[2])
 		deskripsi = strings.Join(splitString[3:], " ")
 	} else {
-		status = splitString[0]
-		jumlah = splitString[1]
-		if splitString[2] != "untuk" && splitString[2] != "dari" && splitString[2] != "buat" {
-			kategori = splitString[2]
+		splitString := strings.Split(strings.ToLower(message), " ")
+		status = strings.TrimSpace(splitString[0])
+		jumlah = strings.TrimSpace(splitString[1])
+		if splitString[2] != "untuk" && splitString[2] != "dari" && splitString[2] != "buat" && splitString[2] != "ke" {
+			kategori = strings.TrimSpace(splitString[2])
 			deskripsi = strings.Join(splitString[3:], " ")
 		} else {
-			kategori = splitString[3]
+			kategori = strings.TrimSpace(splitString[3])
 			deskripsi = strings.Join(splitString[4:], " ")
 		}
 
