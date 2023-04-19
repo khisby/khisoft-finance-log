@@ -53,6 +53,14 @@ func NewChatUsecase(gsheetUsecase *repository.GSheetRepository, waCli *whatsmeow
 	mapCategory["belanjaan"] = entity.Belanja
 	mapCategory["project"] = entity.Project
 	mapCategory["kerja"] = entity.Kerja
+	mapCategory["gaji"] = entity.Kerja
+	mapCategory["utang"] = entity.Hutang
+	mapCategory["hutang"] = entity.Hutang
+	mapCategory["pinjam"] = entity.Hutang
+	mapCategory["pinjem"] = entity.Hutang
+	mapCategory["sedekah"] = entity.Sedekah
+	mapCategory["ngasih"] = entity.Sedekah
+	mapCategory["infaq"] = entity.Sedekah
 
 	return &ChatUsecase{gsheetUsecase, waCli, whitelistUserMap, entity.FinanceLog{}, mapCategory}
 }
@@ -79,16 +87,15 @@ func (c *ChatUsecase) FinanceLog(sender string, message *waProto.Message) {
 			return
 		}
 
-		go func() {
-			row := [][]string{}
-			columnName := []string{"Time", "Category", "Amount", "Status", "Description"}
-			row = append(row, columnName)
-			err = c.gsheetUsecase.UpdateSheetData(sender, row)
-			if err != nil {
-				fmt.Printf("Error updating sheet: %s", err)
-				return
-			}
-		}()
+		row := [][]string{}
+		columnName := []string{"Time", "Category", "Amount", "Status", "Description"}
+		row = append(row, columnName)
+		err = c.gsheetUsecase.UpdateSheetData(sender, row)
+		if err != nil {
+			fmt.Printf("Error updating sheet: %s", err)
+			return
+		}
+
 		go func() {
 			err = c.SendMessage(sender, fmt.Sprintf("%s %s", entity.NewCommers, entity.MenuText))
 			if err != nil {
@@ -254,53 +261,80 @@ func (c *ChatUsecase) countReport(rows [][]string, jenisReport, waktuReport stri
 	totalPemasukanCategory := map[string]int64{}
 	totalPengeluaranCategory := map[string]int64{}
 
+	location, err := time.LoadLocation("Asia/Jakarta")
+	if err != nil {
+		panic(err)
+	}
+
+	now := time.Now().In(location)
+
+	weekStart := now
+	for weekStart.Weekday() != time.Monday {
+		weekStart = weekStart.AddDate(0, 0, -1)
+	}
+	weekStart = time.Date(weekStart.Year(), weekStart.Month(), weekStart.Day(), 0, 0, 0, 0, weekStart.Location())
+
+	weekEnd := now
+	for weekEnd.Weekday() != time.Sunday {
+		weekEnd = weekEnd.AddDate(0, 0, 1)
+	}
+	weekEnd = time.Date(weekEnd.Year(), weekEnd.Month(), weekEnd.Day(), 23, 59, 59, 0, weekEnd.Location())
+
 	for _, row := range rows {
 		if len(row) == 0 || row[0] == "Time" {
 			continue
 		}
 
-		timeRow, err := time.Parse("02-01-2006 15:04:05", row[0])
+		timeRow, err := time.ParseInLocation("02-01-2006 15:04:05", row[0], location)
 		if err != nil {
 			fmt.Printf("Error parsing time: %s", err)
 			return 0, 0, nil, nil, err
 		}
 		if jenisReport == "hari" && waktuReport == "ini" {
-			if timeRow.Day() != time.Now().Day() {
+			if timeRow.Day() != now.Day() {
 				continue
 			}
-			if timeRow.Month() != time.Now().Month() {
+			if timeRow.Month() != now.Month() {
 				continue
 			}
-			if timeRow.Year() != time.Now().Year() {
+			if timeRow.Year() != now.Year() {
 				continue
 			}
 		} else if jenisReport == "bulan" && waktuReport == "ini" {
-			if timeRow.Month() != time.Now().Month() {
+			if timeRow.Month() != now.Month() {
 				continue
 			}
-			if timeRow.Year() != time.Now().Year() {
+			if timeRow.Year() != now.Year() {
 				continue
 			}
 		} else if jenisReport == "hari" && waktuReport == "kemarin" {
-			if timeRow.Day() != time.Now().AddDate(0, 0, -1).Day() && timeRow.Year() == time.Now().Year() {
+			if timeRow.Day() != now.AddDate(0, 0, -1).Day() && timeRow.Year() == now.Year() {
 				continue
 			}
-			if timeRow.Month() != time.Now().Month() {
+			if timeRow.Month() != now.Month() {
 				continue
 			}
-			if timeRow.Year() != time.Now().Year() {
+			if timeRow.Year() != now.Year() {
 				continue
 			}
 		} else if jenisReport == "bulan" && waktuReport == "kemarin" {
-			if timeRow.Month() != time.Now().AddDate(0, -1, 0).Month() {
+			if timeRow.Month() != now.AddDate(0, -1, 0).Month() {
 				continue
 			}
 
-			if time.Now().Month() == time.January && timeRow.Year() != time.Now().AddDate(-1, 0, 0).Year() {
+			if now.Month() == time.January && timeRow.Year() != now.AddDate(-1, 0, 0).Year() {
 				continue
 			}
 
-			if time.Now().Month() != time.January && timeRow.Year() != time.Now().Year() {
+			if now.Month() != time.January && timeRow.Year() != now.Year() {
+				continue
+			}
+		} else if jenisReport == "minggu" && waktuReport == "ini" {
+			if !(timeRow.After(weekStart) && timeRow.Before(weekEnd)) {
+				continue
+			}
+		} else if jenisReport == "minggu" && waktuReport == "kemarin" {
+			if !(timeRow.After(weekStart.AddDate(0, 0, -7)) && timeRow.Before(weekEnd.AddDate(0, 0, -7))) {
 				continue
 			}
 		}
@@ -342,7 +376,7 @@ func (c *ChatUsecase) Catat(sender, message string) {
 			return
 		}
 
-		err = c.SendMessage(sender, fmt.Sprintf(entity.ReplyChatSaved, financeLog.Status, utils.FormatRupiah(amount), financeLog.Category, financeLog.Description))
+		err = c.SendMessage(sender, fmt.Sprintf(entity.ReplyChatSaved, financeLog.Status, utils.FormatRupiah(amount), financeLog.Category, utils.CapitalizeFirstChar(financeLog.Description)))
 		if err != nil {
 			fmt.Printf("Error sending message: %s", err)
 		}
@@ -364,13 +398,11 @@ func (c *ChatUsecase) Catat(sender, message string) {
 
 	rows = append(rows, row)
 
-	go func() {
-		err = c.gsheetUsecase.UpdateSheetData(sender, rows)
-		if err != nil {
-			fmt.Printf("Error updating sheet data: %s", err)
-			return
-		}
-	}()
+	err = c.gsheetUsecase.UpdateSheetData(sender, rows)
+	if err != nil {
+		fmt.Printf("Error updating sheet data: %s", err)
+		return
+	}
 }
 
 func (c *ChatUsecase) parseMessageToFinanceLog(message, sender string) (entity.FinanceLog, error) {

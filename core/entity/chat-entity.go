@@ -20,7 +20,9 @@ kategori yg tersedia ini ya kak :
 6. belanja (termasuk: belanja online)
 7. project 
 8. kerja 
-9. lainnya
+9. Utang
+10. Sedekah
+11. lainnya
 	`
 	ReplyChatSaved           = "Okay kak, aku catet yak. Detailnya gini kak \n\nStatus : %s \nNominal : %s \nKategori : %s \nKeterangan : %s"
 	ReportTextNotFound       = "Maaf, aku ga nemu data keuangan kamu kak. Kamu udah pernah catat keuangan belum?"
@@ -44,4 +46,6 @@ const (
 	Lainnya   Category = "Lain-Lain"
 	Project   Category = "Project"
 	Kerja     Category = "Kerja"
+	Hutang    Category = "Hutang"
+	Sedekah   Category = "Sedekah"
 )
