@@ -78,6 +78,9 @@ func (c *ChatUsecase) FinanceLog(sender string, message *waProto.Message) {
 	}
 
 	messageText := message.GetConversation()
+	if messageText == "" {
+		messageText = message.GetExtendedTextMessage().GetText()
+	}
 	fmt.Printf(time.Now().Format("2006-01-02 15:04:05")+" message from: %s with content: %s\n", sender, messageText)
 	checkSheetIfExist := c.gsheetUsecase.CheckSheetIfExist(sender)
 	if !checkSheetIfExist {
