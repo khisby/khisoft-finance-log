@@ -1,6 +1,9 @@
 package entity
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 type FinanceLog struct {
 	WhatsappNumber string
@@ -12,5 +15,11 @@ type FinanceLog struct {
 }
 
 func (f *FinanceLog) FillTime() {
-	f.Time = time.Now()
+	location, err := time.LoadLocation("Etc/GMT-7")
+	if err != nil {
+		fmt.Println("Error loading location:", err)
+		return
+	}
+
+	f.Time = time.Now().In(location)
 }
