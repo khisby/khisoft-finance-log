@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -261,11 +262,35 @@ func generateReportText(jenisReport, waktuReport string, pemasukan, pengeluaran 
 	text += fmt.Sprintf(entity.ReportTextPemasukan, utils.FormatRupiah(pemasukan))
 	text += fmt.Sprintf(entity.ReportTextPengeluaran, utils.FormatRupiah(pengeluaran))
 	text += fmt.Sprintf(entity.ReportTextCategoryHeader, "Pemasukan")
-	for k, v := range totalPemasukanCategory {
+
+	// For totalPemasukanCategory
+	keys := make([]string, 0, len(totalPemasukanCategory))
+	for k := range totalPemasukanCategory {
+		keys = append(keys, k)
+	}
+
+	sort.Slice(keys, func(i, j int) bool {
+		return totalPemasukanCategory[keys[i]] > totalPemasukanCategory[keys[j]]
+	})
+
+	for _, k := range keys {
+		v := totalPemasukanCategory[k]
 		text += fmt.Sprintf(entity.ReportTextCategory, k, utils.FormatRupiah(v))
 	}
+
 	text += fmt.Sprintf(entity.ReportTextCategoryHeader, "Pengeluaran")
-	for k, v := range totalPengeluaranCategory {
+
+	keys = make([]string, 0, len(totalPengeluaranCategory))
+	for k := range totalPengeluaranCategory {
+		keys = append(keys, k)
+	}
+
+	sort.Slice(keys, func(i, j int) bool {
+		return totalPengeluaranCategory[keys[i]] > totalPengeluaranCategory[keys[j]]
+	})
+
+	for _, k := range keys {
+		v := totalPengeluaranCategory[k]
 		text += fmt.Sprintf(entity.ReportTextCategory, k, utils.FormatRupiah(v))
 	}
 	return text
