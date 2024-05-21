@@ -193,29 +193,9 @@ func (c *ChatUsecase) Delete(sender, message string) {
 		}()
 	}
 }
-
 func (c *ChatUsecase) Report(sender, message string) {
 	splitMessageText := strings.Split(strings.ToLower(message), " ")
-	jenisReport := ""
-	waktuReport := ""
-
-	if len(splitMessageText) > 1 {
-		if splitMessageText[1] == "mingguan" || splitMessageText[1] == "minggu" {
-			jenisReport = "minggu"
-		} else if splitMessageText[1] == "bulanan" || splitMessageText[1] == "bulan" {
-			jenisReport = "bulan"
-		} else {
-			jenisReport = "hari"
-		}
-	}
-
-	if len(splitMessageText) > 2 {
-		if splitMessageText[2] == "lalu" || splitMessageText[2] == "kemarin" {
-			waktuReport = "kemarin"
-		} else {
-			waktuReport = "ini"
-		}
-	}
+	jenisReport, waktuReport := parseMessage(splitMessageText)
 
 	rows, err := c.gsheetUsecase.GetSheetData(sender)
 	if err != nil {
@@ -224,10 +204,8 @@ func (c *ChatUsecase) Report(sender, message string) {
 	}
 
 	if len(rows) == 1 {
-		err := c.SendMessage(sender, entity.ReportTextNotFound)
-		if err != nil {
+		if err := c.SendMessage(sender, entity.ReportTextNotFound); err != nil {
 			fmt.Printf("Error sending message: %s", err)
-			return
 		}
 		return
 	}
@@ -238,6 +216,47 @@ func (c *ChatUsecase) Report(sender, message string) {
 		return
 	}
 
+	text := generateReportText(jenisReport, waktuReport, pemasukan, pengeluaran, totalPemasukanCategory, totalPengeluaranCategory)
+	if err := c.SendMessage(sender, text); err != nil {
+		fmt.Printf("Error sending message: %s", err)
+	}
+}
+
+func parseMessage(splitMessageText []string) (string, string) {
+	jenisReport := "hari"
+	waktuReport := "ini"
+
+	if len(splitMessageText) > 1 {
+		switch splitMessageText[1] {
+		case "mingguan", "minggu":
+			jenisReport = "minggu"
+		case "bulanan", "bulan":
+			jenisReport = "bulan"
+		case "tahunan", "tahun":
+			jenisReport = "tahun"
+		}
+	}
+
+	if len(splitMessageText) > 2 {
+		switch splitMessageText[2] {
+		case "kemarin", "lalu":
+			switch jenisReport {
+			case "hari":
+				waktuReport = "kemarin"
+			case "minggu":
+				waktuReport = "kemarin"
+			case "bulan":
+				waktuReport = "kemarin"
+			case "tahun":
+				waktuReport = "kemarin"
+			}
+		}
+	}
+
+	return jenisReport, waktuReport
+}
+
+func generateReportText(jenisReport, waktuReport string, pemasukan, pengeluaran int64, totalPemasukanCategory, totalPengeluaranCategory map[string]int64) string {
 	text := fmt.Sprintf(entity.ReportTextHeader, jenisReport, waktuReport)
 	text += fmt.Sprintf(entity.ReportTextPemasukan, utils.FormatRupiah(pemasukan))
 	text += fmt.Sprintf(entity.ReportTextPengeluaran, utils.FormatRupiah(pengeluaran))
@@ -249,13 +268,7 @@ func (c *ChatUsecase) Report(sender, message string) {
 	for k, v := range totalPengeluaranCategory {
 		text += fmt.Sprintf(entity.ReportTextCategory, k, utils.FormatRupiah(v))
 	}
-
-	err = c.SendMessage(sender, text)
-	if err != nil {
-		fmt.Printf("Error sending message: %s", err)
-		return
-	}
-
+	return text
 }
 
 func (c *ChatUsecase) countReport(rows [][]string, jenisReport, waktuReport string) (int64, int64, map[string]int64, map[string]int64, error) {
@@ -270,18 +283,18 @@ func (c *ChatUsecase) countReport(rows [][]string, jenisReport, waktuReport stri
 	}
 
 	now := time.Now().In(location)
+	var startDate, endDate time.Time
 
-	weekStart := now
-	for weekStart.Weekday() != time.Monday {
-		weekStart = weekStart.AddDate(0, 0, -1)
+	switch jenisReport {
+	case "hari":
+		startDate, endDate = getDayRange(now, waktuReport)
+	case "minggu":
+		startDate, endDate = getWeekRange(now, waktuReport)
+	case "bulan":
+		startDate, endDate = getMonthRange(now, waktuReport)
+	case "tahun":
+		startDate, endDate = getYearRange(now, waktuReport)
 	}
-	weekStart = time.Date(weekStart.Year(), weekStart.Month(), weekStart.Day(), 0, 0, 0, 0, weekStart.Location())
-
-	weekEnd := now
-	for weekEnd.Weekday() != time.Sunday {
-		weekEnd = weekEnd.AddDate(0, 0, 1)
-	}
-	weekEnd = time.Date(weekEnd.Year(), weekEnd.Month(), weekEnd.Day(), 23, 59, 59, 0, weekEnd.Location())
 
 	for _, row := range rows {
 		if len(row) == 0 || row[0] == "Time" {
@@ -293,53 +306,9 @@ func (c *ChatUsecase) countReport(rows [][]string, jenisReport, waktuReport stri
 			fmt.Printf("Error parsing time: %s", err)
 			return 0, 0, nil, nil, err
 		}
-		if jenisReport == "hari" && waktuReport == "ini" {
-			if timeRow.Day() != now.Day() {
-				continue
-			}
-			if timeRow.Month() != now.Month() {
-				continue
-			}
-			if timeRow.Year() != now.Year() {
-				continue
-			}
-		} else if jenisReport == "bulan" && waktuReport == "ini" {
-			if timeRow.Month() != now.Month() {
-				continue
-			}
-			if timeRow.Year() != now.Year() {
-				continue
-			}
-		} else if jenisReport == "hari" && waktuReport == "kemarin" {
-			if timeRow.Day() != now.AddDate(0, 0, -1).Day() && timeRow.Year() == now.Year() {
-				continue
-			}
-			if timeRow.Month() != now.Month() {
-				continue
-			}
-			if timeRow.Year() != now.Year() {
-				continue
-			}
-		} else if jenisReport == "bulan" && waktuReport == "kemarin" {
-			if timeRow.Month() != now.AddDate(0, -1, 0).Month() {
-				continue
-			}
 
-			if now.Month() == time.January && timeRow.Year() != now.AddDate(-1, 0, 0).Year() {
-				continue
-			}
-
-			if now.Month() != time.January && timeRow.Year() != now.Year() {
-				continue
-			}
-		} else if jenisReport == "minggu" && waktuReport == "ini" {
-			if !(timeRow.After(weekStart) && timeRow.Before(weekEnd)) {
-				continue
-			}
-		} else if jenisReport == "minggu" && waktuReport == "kemarin" {
-			if !(timeRow.After(weekStart.AddDate(0, 0, -7)) && timeRow.Before(weekEnd.AddDate(0, 0, -7))) {
-				continue
-			}
+		if timeRow.Before(startDate) || timeRow.After(endDate) {
+			continue
 		}
 
 		amount, err := strconv.ParseInt(row[2], 10, 64)
@@ -348,16 +317,68 @@ func (c *ChatUsecase) countReport(rows [][]string, jenisReport, waktuReport stri
 			return 0, 0, nil, nil, err
 		}
 
-		if row[3] == "Debit" {
+		switch row[3] {
+		case "Debit":
 			totalPemasukan += amount
 			totalPemasukanCategory[row[1]] += amount
-		} else if row[3] == "Kredit" {
+		case "Kredit":
 			totalPengeluaran += amount
 			totalPengeluaranCategory[row[1]] += amount
 		}
 	}
 
 	return totalPemasukan, totalPengeluaran, totalPemasukanCategory, totalPengeluaranCategory, nil
+}
+
+func getDayRange(now time.Time, waktuReport string) (time.Time, time.Time) {
+	var startDate time.Time
+	if waktuReport == "kemarin" {
+		startDate = now.AddDate(0, 0, -1)
+	} else {
+		startDate = now
+	}
+	startDate = time.Date(startDate.Year(), startDate.Month(), startDate.Day(), 0, 0, 0, 0, startDate.Location())
+	endDate := startDate.AddDate(0, 0, 1).Add(-time.Second)
+	return startDate, endDate
+}
+
+func getWeekRange(now time.Time, waktuReport string) (time.Time, time.Time) {
+	var startDate time.Time
+	if waktuReport == "kemarin" {
+		startDate = now.AddDate(0, 0, -7)
+	} else {
+		startDate = now
+	}
+	for startDate.Weekday() != time.Monday {
+		startDate = startDate.AddDate(0, 0, -1)
+	}
+	startDate = time.Date(startDate.Year(), startDate.Month(), startDate.Day(), 0, 0, 0, 0, startDate.Location())
+	endDate := startDate.AddDate(0, 0, 7).Add(-time.Second)
+	return startDate, endDate
+}
+
+func getMonthRange(now time.Time, waktuReport string) (time.Time, time.Time) {
+	var startDate time.Time
+	if waktuReport == "kemarin" {
+		startDate = now.AddDate(0, -1, 0)
+	} else {
+		startDate = now
+	}
+	startDate = time.Date(startDate.Year(), startDate.Month(), 1, 0, 0, 0, 0, startDate.Location())
+	endDate := startDate.AddDate(0, 1, 0).Add(-time.Second)
+	return startDate, endDate
+}
+
+func getYearRange(now time.Time, waktuReport string) (time.Time, time.Time) {
+	var startDate time.Time
+	if waktuReport == "kemarin" {
+		startDate = now.AddDate(-1, 0, 0)
+	} else {
+		startDate = now
+	}
+	startDate = time.Date(startDate.Year(), 1, 1, 0, 0, 0, 0, startDate.Location())
+	endDate := startDate.AddDate(1, 0, 0).Add(-time.Second)
+	return startDate, endDate
 }
 
 func (c *ChatUsecase) Catat(sender, message string) {

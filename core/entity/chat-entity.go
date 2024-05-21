@@ -6,7 +6,7 @@ const (
 Untuk menggunakan aplikasi Finance-Log, Kamu bisa pakai command ini ya:
 1. [keluar/masuk] [jumlah] dari/buat [kategori] [deskripsi] -> save keuangan kamu
 2. [debit/kredit] enter [jumlah] enter [kategori] enter [deskripsi] -> save keuangan kamu
-3. [laporan/report] [hari/bulan] [ini/kemarin] -> untuk melihat laporan keuangan kamu
+3. [laporan/report] [hari/minggu/bulan/tahun] [ini/kemarin] -> untuk melihat laporan keuangan kamu
 4. hapus terakhir/barusan -> untuk menghapus data terakhir
 5. link -> untuk melihat link google sheet kamu
 6. bantuan/bantuin -> untuk melihat bantuan
